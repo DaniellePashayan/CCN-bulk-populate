@@ -1,12 +1,14 @@
 import configparser
 import pandas as pd
 from tkinter import filedialog as fd
+from datetime import datetime, timedelta
+import os
 
 
 class Bulk_File():
-    def __init__(self, file: str, output_location:str):
+    def __init__(self, file: str, output_location: str, filename: str):
         self.file = file
-        self.template = pd.read_excel('./resources/ccn_form.xlsx', header=0)
+        self.template = pd.read_excel('./resources/ccn_template.xlsx', header=0)
         self.accepted_fscs = pd.read_excel(
             'M:/CPP-Data/Sutherland RPA/Northwell Process Automation ETM Files/Monthly Reports/Charge Correction/References/FSCs that accept electronic CCL.xlsx')
         self.columns = [
@@ -29,21 +31,6 @@ class Bulk_File():
             'BAR_B_INV.REJ_REF_NUM': str,
         }
 
-        self.crosswalk = {
-            '99202': '99212',
-            '99203': '99213',
-            '99204': '99214',
-            '99205': '99215',
-            '92002': '92012',
-            '92004': '92014',
-            '99381': '99391',
-            '99382': '99392',
-            '99383': '99393',
-            '99384': '99394',
-            '99385': '99395',
-            '99386': '99396',
-            '99387': '99397'
-        }
         self.data = self.read_file()
         self.column_mappings = {
             'Invoice': 'BAR_B_INV.INV_NUM',
@@ -57,7 +44,9 @@ class Bulk_File():
             'STEP': 'Step'
         }
         self.formatted_file = self.format_file(self.data)
-        self.formatted_file.to_excel(output_location, index=False)        
+        if not os.path.exists(output_location):
+            os.mkdir(output_location)
+        self.formatted_file.to_excel(f'{output_location}{filename}', index=False)
 
     def replace_non_accepted_cpts(self, data: pd.DataFrame):
         return "|".join([cpt if cpt in self.crosswalk.keys() else '' for cpt in data.split('|')])
@@ -103,29 +92,52 @@ class Bulk_File():
         # Iterate through the crosswalk
         for template_column, data_column in self.column_mappings.items():
             self.template[template_column] = data[data_column]
-            
+
         self.template['Data'] = "Northwell"
         return self.template
 
+
+def get_bot_file_date(date: datetime):
+        # if today is Friday
+    if date.weekday() == 4:
+        # set FILE_DATE to today + 3
+        file_date = date + timedelta(days=3)
+    else:
+        # set FILE_DATE to today + 1
+        file_date = date + timedelta(days=1)
+
+    last_day_of_month = (file_date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+    if file_date == last_day_of_month:
+        # advance to the next day until it's a business day
+        while True:
+            file_date += timedelta(days=1)
+            if file_date.weekday() < 5:
+                break
+    return file_date
+
 if __name__ == '__main__':
 
-    config = configparser.ConfigParser()
-    config.read('./config/config.ini')
+    query_location = r'M:\CPP-Data\Sutherland RPA\Northwell Process Automation ETM Files\Monthly Reports\Charge Correction\New vs Established\Query'
+    output_location = r'M:\CPP-Data\Sutherland RPA\Northwell Process Automation ETM Files\Monthly Reports\Charge Correction\New vs Established\Formatted Inputs'
 
-    root = config['DEFAULT']['QUERY_LOCATION']
-    output_location = config['DEFAULT']['FORMATTED_INPUT_LOCATION']
-    date_format = config['DEFAULT']['OUTPUT_DATE_FORMAT']
-    title = config['GUI']['WINDOW_TITLE']
-    width = int(config['GUI']['WINDOW_WIDTH'])
-    height = int(config['GUI']['WINDOW_HEIGHT'])
 
     file = fd.askopenfilename(defaultextension='.txt', filetypes=[
-                              ('txt', '*.txt')], initialdir=root)
-    
+                              ('.txt', '*.txt')], initialdir=query_location, title='Select a file')
+
+    # if user presses cancel, exit program
+    if file == '':
+        exit()
+
     # extract date from file
     date = file.split('/')[-1].split('.')[0]
-    # remove spaces from date
-    date = date.replace(' ', '')
-    output_location = f'{output_location}/{date}.xlsx'
+    date = datetime.strptime(date, '%m %d %Y')
     
-    Bulk_File(file, output_location)
+    file_date = get_bot_file_date(date).strftime(format='%m %d %Y')
+    file_date_nosp = get_bot_file_date(date).strftime(format='%m%d%Y')
+    
+    # remove spaces from date
+    output_location = f'{output_location}/{file_date_nosp}/'
+    filename = f'B16DENIALS {file_date}.xlsx'
+
+    Bulk_File(file, output_location, filename)
+

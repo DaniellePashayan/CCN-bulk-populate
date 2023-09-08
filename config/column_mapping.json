@@ -1,0 +1,11 @@
+{
+  "Invoice": "BAR_B_INV.INV_NUM",
+  "ClaimReferenceNumber": "BAR_B_INV.REJ_REF_NUM",
+  "InvoiceBalance": "BAR_B_INV.INV_BAL",
+  "Insurance": "BAR_B_INV.FSC__5",
+  "OriginalCPT": "Original CPT List",
+  "NewCPT": "New CPT List",
+  "ActionAddRemoveReplace": "Comment",
+  "Reason": "Reason",
+  "STEP": "Step"
+}
