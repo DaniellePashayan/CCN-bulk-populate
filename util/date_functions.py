@@ -1,6 +1,7 @@
 import datetime
 import calendar
 from pandas.tseries.holiday import USFederalHolidayCalendar
+from loguru import logger
 
 def check_weekend(curr_date):
     # 5 = Saturday, 6 = Sunday
@@ -19,7 +20,8 @@ def check_if_EOM(curr_date):
     last_day_of_month = (curr_date.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
     return last_day_of_month == curr_date
 
-def get_next_business_day(tomorrow):
+def get_next_business_day(today):
+    tomorrow = today + datetime.timedelta(days=1)    
     while check_weekend(tomorrow) or check_if_holiday(tomorrow) or check_if_EOM(tomorrow):
         tomorrow += datetime.timedelta(days=1)
     return tomorrow
