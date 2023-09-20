@@ -41,6 +41,7 @@ cpt_crosswalk = {
 }
 
 columns = [
+    'Dummy',
     'Task',
     'Invoice',
     'FSC',
@@ -50,7 +51,8 @@ columns = [
     'CPT List',
     'TCN',
     'Max New Pt Rejection',
-    'Outsource Tag'
+    'Outsource Tag',
+    # 'Patient Responsibility'
 ]
 
 dtypes = {
@@ -63,5 +65,6 @@ dtypes = {
     'CPT List': str,
     'TCN': str,
     # 'Max New Pt Rejection',
-    'Outsource Tag': str
+    'Outsource Tag': str,
+    # 'Patient Responsibility': float
 }
