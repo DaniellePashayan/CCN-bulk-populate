@@ -74,5 +74,5 @@ class RPA_CCN_Bulk_Combine():
         
         logger.info(f'output location: {output_location}/{file_date_nosp}/{file_name}')
         
-        data = Raw_File(self.file)
+        data = Raw_File(self.file, self.ccn_type)
         data.generate_output(file_date_nosp, output_location, file_name)

@@ -6,8 +6,9 @@ import os
 
 class Raw_File():
 
-    def __init__(self, source_path: str):
+    def __init__(self, source_path: str, ccn_type: str):
         self.source_path = source_path
+        self.ccn_type = ccn_type
         
         self.template = pd.read_excel('./references/ccn_template.xlsx')
         
@@ -39,8 +40,10 @@ class Raw_File():
             tuple(tags_to_exclude))]
         file_data = file_data[file_data['Invoice Balance'] >= 304]
         
-        # remove MCAD
-        file_data = file_data[~file_data['FSC'].str.startswith('MCAD')]
+        if self.ccn_type == 'Paper':
+            file_data = file_data[file_data['FSC'].str.startswith(tuple(['MCAR', 'MCGH']))]
+            # filter to remove any lines wwhere there is more than 1 CPT code in the CPT list
+            file_data = file_data[file_data['CPT List'].str.contains(',') == False]
         
         # remove any lines where the patient responsibility is = to the balance
         file_data = file_data[file_data['Patient Responsibility'] != file_data['Invoice Balance']]
