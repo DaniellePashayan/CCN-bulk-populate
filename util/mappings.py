@@ -1,8 +1,8 @@
 column_mappings = {
-    "Invoice": "BAR_B_INV.INV_NUM",
-    "ClaimReferenceNumber": "BAR_B_INV.REJ_REF_NUM",
-    "InvoiceBalance": "BAR_B_INV.INV_BAL",
-    "Insurance": "BAR_B_INV.FSC__5",
+    "Invoice": "Invoice",
+    "ClaimReferenceNumber": "TCN",
+    "InvoiceBalance": "Invoice Balance",
+    "Insurance": "FSC",
     "OriginalCPT": "Original CPT List",
     "NewCPT": "New CPT List",
     "ActionAddRemoveReplace": "Comment",
@@ -52,7 +52,9 @@ columns = [
     'TCN',
     'Max New Pt Rejection',
     'Outsource Tag',
-    # 'Patient Responsibility'
+    'Patient Responsibility',
+    'ETM Status',
+    'Pend Date - Due for FU'
 ]
 
 dtypes = {
@@ -64,7 +66,7 @@ dtypes = {
     'New Visit CPTs': str,
     'CPT List': str,
     'TCN': str,
-    # 'Max New Pt Rejection',
     'Outsource Tag': str,
-    # 'Patient Responsibility': float
+    'Patient Responsibility': float,
+    'ETM Status': str
 }
