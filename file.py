@@ -34,7 +34,7 @@ class Raw_File():
         # remove balance < 304
         file_data['Outsource Tag'].fillna('', inplace=True)
 
-        # filter file_data on Outsource Tag column to remove rows where the Outsource Tag begins with IK, RC, IK, RB, or AP
+        # filter file_data on Outsource Tag column to remove rows where the Outsource Tag begins with IK, RC, RB, or AP
         tags_to_exclude = ['AP', 'IK', 'RB', 'RC']
         file_data = file_data[~file_data['Outsource Tag'].str.startswith(
             tuple(tags_to_exclude))]
