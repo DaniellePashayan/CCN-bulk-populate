@@ -59,20 +59,19 @@ class RPA_CCN_Bulk_Combine():
         logger.info(f'current date: {self.export_date}')
         logger.info(f'file generation date: {self.file_generation_date}')
 
-        # year and month are needed to create dated folders
-        year = self.file_generation_date.strftime(format='%Y')
-        month = self.file_generation_date.strftime(format='%m')
-        day = self.file_generation_date.strftime(format='%d')
 
         # takes the file date and converts into MMDDYYYY format as a string
-        file_date_nosp = self.file_generation_date.strftime(
+        file_date_spaces = self.file_generation_date.strftime(
+            format='%m %d %Y')
+        file_date_no_spaces = self.file_generation_date.strftime(
             format='%m%d%Y')
 
         output_location = 'M:/CPP-Data/Sutherland RPA/Northwell Process Automation ETM Files/Monthly Reports/Charge Correction/New vs Established/Formatted Inputs'
         
-        file_name = f'HCOB16{ccn_type} {file_date_nosp}.xlsx'
+        file_name = f'HCOB16{ccn_type} {file_date_spaces}.xlsx'
         
-        logger.info(f'output location: {output_location}/{file_date_nosp}/{file_name}')
+        logger.info(f'output location: {output_location}/{file_date_no_spaces}/{file_name}')
         
-        data = Raw_File(self.file, self.ccn_type)
-        data.generate_output(file_date_nosp, output_location, file_name)
+        data = Raw_File(self.file, self.ccn_type, query_date)
+        data.generate_output(file_date_no_spaces, output_location, file_name)
+        
