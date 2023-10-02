@@ -48,7 +48,7 @@ class Resubmission():
         return today_df
     
     def get_min_and_max_date(self):
-        min_date = (pd.to_datetime(self.query_date) - pd.DateOffset(days=6))
+        min_date = (pd.to_datetime(self.query_date) - pd.DateOffset(days=1))
         max_date = pd.to_datetime(self.query_date)
         return min_date, max_date
 

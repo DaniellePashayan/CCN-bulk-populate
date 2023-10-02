@@ -51,7 +51,7 @@ class Raw_File():
         file_data = file_data[file_data['Invoice Balance'] >= 304]
         
         if self.ccn_type == 'Paper':
-            file_data = file_data[file_data['FSC'].str.startswith(tuple(['MCAR', 'MCGH']))]
+            file_data = file_data[file_data['FSC'].str.startswith(tuple(['MCAR', 'MCGH', 'MCRR']))]
             # filter to remove any lines wwhere there is more than 1 CPT code in the CPT list
             file_data = file_data[file_data['CPT List'].str.contains(',') == False]
         
@@ -122,7 +122,15 @@ class Raw_File():
             os.makedirs(f'{save_location}/{file_generation_date}')
         
         if save:
-            self.template.to_excel(f'{save_location}/{file_generation_date}/{file_name}', index=None)
-            logger.success(f'file saved to {save_location}/{file_generation_date}/{file_name}')  
+            if not os.path.exists(f'{save_location}/{file_generation_date}/{file_name}'):
+                self.template.to_excel(f'{save_location}/{file_generation_date}/{file_name}', index=None)
+                logger.success(f'file saved to {save_location}/{file_generation_date}/{file_name}')
+            else:
+                logger.info(f'appending to existing file {save_location}/{file_generation_date}/{file_name}')
+                existing_file = pd.read_excel(f'{save_location}/{file_generation_date}/{file_name}')
+                data = pd.concat([existing_file, self.template])
+                data = data.drop_duplicates()
+                data.to_excel(f'{save_location}/{file_generation_date}/{file_name}', index=None)
+                logger.success(f'file saved to {save_location}/{file_generation_date}/{file_name}')
         else:
             return self.template  

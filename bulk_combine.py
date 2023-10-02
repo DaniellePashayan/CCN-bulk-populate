@@ -42,6 +42,7 @@ class RPA_CCN_Bulk_Combine():
             logger.info(f'File selected: {self.file}')
         else:
             self.file = f'{self.export_location}/{query_date}.xlsx'
+            logger.debug(self.file)
 
         # export date is the date of the etm export and the date the process is being run
         self.export_date = datetime.strptime(
