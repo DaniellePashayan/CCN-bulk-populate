@@ -40,7 +40,7 @@ class Resubmission():
         """
         logger.info('Reading in today\'s ETM view')
 
-        # reads the electronic and paper etm view and stores in today_df
+        # reads the etm view and stores in today_df
         today_df = pd.read_excel(f'{self.path}/{self.query_date}.xlsx', skiprows=1, names=mappings.columns, dtype=mappings.dtypes)
         
         # converts the pend date to a date object
@@ -92,7 +92,7 @@ class Resubmission():
 
     def add_resubmissions_to_current_file(self):
         logger.info('Adding resubmissions to current file')
-        resubmission_data = Raw_File(self.path, self.ccn_type, self.query_date)
+        resubmission_data = Raw_File(f'{self.path}/{self.query_date}.xlsx', self.ccn_type, self.query_date)
         
         
         file_generation_date = get_next_business_day(pd.to_datetime(self.query_date).date())
@@ -104,7 +104,9 @@ class Resubmission():
         
         file_name = f'HCOB16{self.ccn_type} {fgd_spaces}.xlsx'
         
-        resubmission_data = resubmission_data.format_output_file(fgd_no_spaces, self.path, file_name, save=False)
+        # resubmission_data = resubmission_data.format_output_file(fgd_no_spaces, self.path, file_name,save=False)
+        resubmission_data.generate_output(fgd_no_spaces, self.path, file_name, save=False)
+        
         
         # append the resubmissions to the current file
         if os.path.exists(todays_file):
