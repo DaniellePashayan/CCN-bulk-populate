@@ -4,33 +4,6 @@ import re
 import datetime
 import os
 
-# # connect to the database table
-# conn = sqlite3.connect(f'{path}/Invoices and Status.db')
-# cursor = conn.cursor()
-
-# # create the database table if it doesnt exist
-# # Create a table with a composite primary key (invoice_number, review_date)
-# cursor.execute('''CREATE TABLE IF NOT EXISTS invoices (
-#                     task_nm TEXT,
-#                     invoice_number TEXT,
-#                     fsc TEXT,
-#                     tot_chg REAL,
-#                     invoice_balance REAL,
-#                     new_visit_cpt_list TEXT,
-#                     full_cpt_list TEXT,
-#                     tcn TEXT,
-#                     rejection_date TEXT,
-#                     outsource_tag TEXT,
-#                     etm_status TEXT,
-#                     review_date TEXT,
-#                     outcome TEXT,
-#                     PRIMARY KEY (invoice_number, review_date)
-#                 )''')
-
-# # Commit changes and close the connection
-# conn.commit()
-# conn.close()
-
 class Database():
     def __init__(self, query_date: str, ccn_type: str = 'Electronic'):
         
@@ -120,10 +93,6 @@ class Database():
                 cursor.execute('UPDATE invoices SET outcome=? WHERE invoice_number=? AND review_date=?', (outcome, invoice_number, review_date))
             
             self.close_database_connection(conn)
-    
-    def update_row(self, invoice_number: str, review_date: str, outcome: str):
-        conn, cursor = self.open_database_connection()
-        cursor.execute('UPDATE invoices SET outcome=? WHERE invoice_number=? AND review_date=?', (outcome, invoice_number, review_date))
     
     
 def backlog():            

@@ -1,9 +1,14 @@
-import pandas as pd
-from glob import glob
-import util.mappings as mappings
-from util.utilitiy_functions import replace_non_accepted_cpts, replace_new_pt_cpts
-from util.logger_config import logger
 import os
+from glob import glob
+
+import pandas as pd
+
+import util.mappings as mappings
+from util.database import (close_database_connection, open_database_connection,update_row_outcome)
+from util.logger_config import logger
+from util.utilitiy_functions import (replace_new_pt_cpts,
+                                     replace_non_accepted_cpts)
+
 
 class Raw_File():
 
@@ -33,37 +38,81 @@ class Raw_File():
             logger.critical('File does not exist')
     
     def filter_data_for_output(self, file_data: pd.DataFrame):
+        
         logger.debug('filtering data')
         # EXCLUSIONS AS OF 9/20/2023
         # remove vendor inventory
         # remove balance < 304
         
         # review date is the query date + 6 days
-        review_date = (pd.to_datetime(self.query_date) + pd.Timedelta(days=6)).date()
         # anything with a review date of less than 6 days means it appeared on the report before the query date
-        file_data = file_data[file_data['Pend Date - Due for FU'] == review_date].reset_index()
+        review_date = (pd.to_datetime(self.query_date) + pd.Timedelta(days=6)).date()
+        
+        # Only include ones that were pended by the auto process
+        file_data = file_data[file_data['ETM Status'] == 'Hold-RPA Charge Correction']
         
         # filter file_data on Outsource Tag column to remove rows where the Outsource Tag begins with IK, RC, RB, or AP
         file_data['Outsource Tag'].fillna('', inplace=True)
         tags_to_exclude = ['AP', 'IK', 'RB', 'RC']
-        file_data = file_data[~file_data['Outsource Tag'].str.startswith(
-            tuple(tags_to_exclude))]
-        file_data = file_data[file_data['Invoice Balance'] >= 304]
         
-        if self.ccn_type == 'Paper':
-            file_data = file_data[file_data['FSC'].str.startswith(tuple(['MCAR', 'MCGH', 'MCRR']))]
-            # filter to remove any lines wwhere there is more than 1 CPT code in the CPT list
-            file_data = file_data[file_data['CPT List'].str.contains(',') == False]
-        
-        # remove any lines where the patient responsibility is = to the balance
-        file_data = file_data[file_data['Patient Responsibility'] != file_data['Invoice Balance']]
+        filter_criteria = []
+        # Append criteria based on 'Pend Date - Due for FU'
+        filter_criteria.append(file_data['Pend Date - Due for FU'] == review_date)
 
+        # Append criteria based on 'Outsource Tag'
+        filter_criteria.append(~file_data['Outsource Tag'].str.startswith(tuple(tags_to_exclude)))
+
+        # Append criteria based on 'Invoice Balance'
+        filter_criteria.append(file_data['Invoice Balance'] >= 304)
+
+        # Append criteria based on 'Patient Responsibility'
+        filter_criteria.append(file_data['Patient Responsibility'] != file_data['Invoice Balance'])
+
+        # Check if the ccn_type is 'Paper' and append criteria accordingly
+        if self.ccn_type == 'Paper':
+            filter_criteria.append(file_data['FSC'].str.startswith(tuple(['MCAR', 'MCGH', 'MCRR'])))
+            # Append criteria based on 'CPT List'
+            filter_criteria.append(file_data['CPT List'].str.contains(',') == False)
+
+        # Combine all filtering criteria using the logical AND operator
+        combined_criteria = pd.Series(True, index=file_data.index)
+        for criterion in filter_criteria:
+            # Apply the combined criteria to filter the data
+            combined_criteria = combined_criteria & criterion
+
+        submitted_data = (file_data[combined_criteria]).reset_index()
+        removed_data = (file_data[~combined_criteria]).reset_index()
+        
         # fill in the blank TCN values with 'NA'
-        file_data['TCN'] = file_data['TCN'].fillna('NA')
+        submitted_data['TCN'] = submitted_data['TCN'].fillna('NA')
         
         # add "CLM" prefix to all TCN values
-        file_data['TCN'] = 'CLM' + file_data['TCN'].astype(str)
-        return file_data
+        submitted_data['TCN'] = 'CLM' + submitted_data['TCN'].astype(str)
+        
+        conn, cursor = open_database_connection()
+        logger.info('connected to database')
+        
+        review_date_str = review_date.strftime('%Y-%m-%d')
+        
+        
+        for _, row in submitted_data.iterrows():
+            invoice = str(row['Invoice'])
+            
+            # check if the invoice and review date exists in database
+            # if it does, update the outcome to 'Submitted'
+            existing_entry = cursor.execute(f"SELECT * FROM invoices WHERE invoice_number = '{invoice}' AND review_date = '{review_date_str}'").fetchone()
+            if existing_entry:
+                update_row_outcome(cursor, invoice, review_date_str, 'Submitted')
+            else:
+                print(f'invoice {invoice} does not exist in database')
+  
+        for _, row in removed_data.iterrows():
+            invoice = str(row['Invoice'])
+            update_row_outcome(cursor, invoice, review_date_str, 'Removed')
+        
+        conn.commit()
+        conn.close()
+        return submitted_data
     
     def format_output_file(self):
         logger.debug('formatting output file')

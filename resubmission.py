@@ -115,4 +115,4 @@ class Resubmission():
             data.drop_duplicates(inplace=True)
             data.to_excel(todays_file, index=False)
             
-Resubmission(ccn_type="Electronic", query_date='09 28 2023')
+# Resubmission(ccn_type="Electronic", query_date='09 28 2023')
