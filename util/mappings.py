@@ -59,7 +59,7 @@ columns = [
 
 dtypes = {
     'Task' : str,
-    'Invoice': int,
+    'Invoice': str,
     'FSC': str,
     'Tot Chg': float,
     'Invoice Balance': float,

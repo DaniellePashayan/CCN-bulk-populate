@@ -1,31 +1,43 @@
+#file.py
+
 import os
 from glob import glob
 
 import pandas as pd
 
 import util.mappings as mappings
-from util.database import (close_database_connection, open_database_connection,update_row_outcome)
+from util.database import *
 from util.logger_config import logger
 from util.utilitiy_functions import (replace_new_pt_cpts,
                                      replace_non_accepted_cpts)
+from util.date_functions import get_next_business_day
 
 
 class Raw_File():
 
-    def __init__(self, source_path: str, ccn_type: str, query_date: str):
+    def __init__(self, source_path: str, ccn_type: str, query_date: str, file_generation_date: str = None):
         self.source_path = source_path
         self.ccn_type = ccn_type
         self.query_date = query_date
+        if file_generation_date:
+            self.file_generation_date = file_generation_date
+        else:
+            self.file_generation_date = get_next_business_day(pd.to_datetime(self.query_date)).strftime('%Y-%m-%d')
         
         self.template = pd.read_excel('./references/ccn_template.xlsx')
         
         self.file_data = self.read_data()
         self.file_data = self.format_output_file()
+        # self.conn, self.cursor = open_database_connection()
+        # add_etm_export_accounts(self.cursor, self.source_path, self.ccn_type)
+        # self.conn.commit()
     
     def read_data(self):
         logger.debug('reading data')
         if os.path.exists(self.source_path):
-            file_data = pd.read_excel(self.source_path, skiprows=1, names=mappings.columns, dtype=mappings.dtypes, parse_dates=['Max New Pt Rejection', 'Pend Date - Due for FU'])
+            file_data = pd.read_excel(self.source_path, skiprows=1, names=mappings.columns, dtype=mappings.dtypes, usecols=range(14))
+            file_data['Max New Pt Rejection'] = pd.to_datetime(file_data['Max New Pt Rejection']).dt.date
+            file_data['Pend Date - Due for FU'] = pd.to_datetime(file_data['Pend Date - Due for FU']).dt.date
             
             # convert 'Pend Date - Due for FU' column to date
             file_data['Pend Date - Due for FU'] = pd.to_datetime(file_data['Pend Date - Due for FU']).dt.date
@@ -33,6 +45,7 @@ class Raw_File():
             file_data = self.filter_data_for_output(file_data)
             logger.success('data read and filtered')            
 
+        
             return file_data
         else:
             logger.critical('File does not exist')
@@ -40,14 +53,6 @@ class Raw_File():
     def filter_data_for_output(self, file_data: pd.DataFrame):
         
         logger.debug('filtering data')
-        # EXCLUSIONS AS OF 9/20/2023
-        # remove vendor inventory
-        # remove balance < 304
-        
-        # review date is the query date + 6 days
-        # anything with a review date of less than 6 days means it appeared on the report before the query date
-        review_date = (pd.to_datetime(self.query_date) + pd.Timedelta(days=6)).date()
-        
         # Only include ones that were pended by the auto process
         file_data = file_data[file_data['ETM Status'] == 'Hold-RPA Charge Correction']
         
@@ -56,8 +61,7 @@ class Raw_File():
         tags_to_exclude = ['AP', 'IK', 'RB', 'RC']
         
         filter_criteria = []
-        # Append criteria based on 'Pend Date - Due for FU'
-        filter_criteria.append(file_data['Pend Date - Due for FU'] == review_date)
+
 
         # Append criteria based on 'Outsource Tag'
         filter_criteria.append(~file_data['Outsource Tag'].str.startswith(tuple(tags_to_exclude)))
@@ -89,29 +93,26 @@ class Raw_File():
         # add "CLM" prefix to all TCN values
         submitted_data['TCN'] = 'CLM' + submitted_data['TCN'].astype(str)
         
-        conn, cursor = open_database_connection()
-        logger.info('connected to database')
+        # conn, cursor = open_database_connection()
+        # logger.info('connected to database')
         
-        review_date_str = review_date.strftime('%Y-%m-%d')
-        
-        
-        for _, row in submitted_data.iterrows():
-            invoice = str(row['Invoice'])
+        # for _, row in submitted_data.iterrows():
+        #     invoice = str(row['Invoice'])
             
-            # check if the invoice and review date exists in database
-            # if it does, update the outcome to 'Submitted'
-            existing_entry = cursor.execute(f"SELECT * FROM invoices WHERE invoice_number = '{invoice}' AND review_date = '{review_date_str}'").fetchone()
-            if existing_entry:
-                update_row_outcome(cursor, invoice, review_date_str, 'Submitted')
-            else:
-                print(f'invoice {invoice} does not exist in database')
+        #     # check if the invoice and review date exists in database
+        #     # if it does, update the outcome to 'Submitted'
+        #     existing_entry = cursor.execute(f"SELECT * FROM invoices_and_status WHERE invoice_number = '{invoice}' AND file_generation_date = '{self.file_generation_date}'").fetchone()
+        #     if existing_entry:
+        #         update_row_status(cursor, invoice, self.file_generation_date, 'Submitted')
+        #     else:
+        #         print(f'invoice {invoice} does not exist in database')
   
-        for _, row in removed_data.iterrows():
-            invoice = str(row['Invoice'])
-            update_row_outcome(cursor, invoice, review_date_str, 'Removed')
+        # for _, row in removed_data.iterrows():
+        #     invoice = str(row['Invoice'])
+        #     update_row_status(cursor, invoice, self.file_generation_date, 'Removed')
         
-        conn.commit()
-        conn.close()
+        # conn.commit()
+        # conn.close()
         return submitted_data
     
     def format_output_file(self):
