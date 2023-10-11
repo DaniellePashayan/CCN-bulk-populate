@@ -6,7 +6,6 @@ from glob import glob
 import pandas as pd
 
 import util.mappings as mappings
-from util.database import *
 from util.logger_config import logger
 from util.utilitiy_functions import (replace_new_pt_cpts,
                                      replace_non_accepted_cpts)
@@ -15,9 +14,10 @@ from util.date_functions import get_next_business_day
 
 class Raw_File():
 
-    def __init__(self, source_path: str, ccn_type: str, query_date: str, file_generation_date: str = None):
+    def __init__(self, source_path: str, ccn_type: str, query_date: str = None, file_generation_date: str = None):
         self.source_path = source_path
         self.ccn_type = ccn_type
+        
         self.query_date = query_date
         if file_generation_date:
             self.file_generation_date = file_generation_date
@@ -28,9 +28,7 @@ class Raw_File():
         
         self.file_data = self.read_data()
         self.file_data = self.format_output_file()
-        # self.conn, self.cursor = open_database_connection()
-        # add_etm_export_accounts(self.cursor, self.source_path, self.ccn_type)
-        # self.conn.commit()
+
     
     def read_data(self):
         logger.debug('reading data')
@@ -93,26 +91,6 @@ class Raw_File():
         # add "CLM" prefix to all TCN values
         submitted_data['TCN'] = 'CLM' + submitted_data['TCN'].astype(str)
         
-        # conn, cursor = open_database_connection()
-        # logger.info('connected to database')
-        
-        # for _, row in submitted_data.iterrows():
-        #     invoice = str(row['Invoice'])
-            
-        #     # check if the invoice and review date exists in database
-        #     # if it does, update the outcome to 'Submitted'
-        #     existing_entry = cursor.execute(f"SELECT * FROM invoices_and_status WHERE invoice_number = '{invoice}' AND file_generation_date = '{self.file_generation_date}'").fetchone()
-        #     if existing_entry:
-        #         update_row_status(cursor, invoice, self.file_generation_date, 'Submitted')
-        #     else:
-        #         print(f'invoice {invoice} does not exist in database')
-  
-        # for _, row in removed_data.iterrows():
-        #     invoice = str(row['Invoice'])
-        #     update_row_status(cursor, invoice, self.file_generation_date, 'Removed')
-        
-        # conn.commit()
-        # conn.close()
         return submitted_data
     
     def format_output_file(self):

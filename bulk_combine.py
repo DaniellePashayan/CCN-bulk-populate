@@ -2,6 +2,7 @@ import sys
 import os
 from datetime import datetime
 from tkinter import filedialog as fd
+from tkinter import messagebox
 
 import pandas as pd
 
@@ -32,17 +33,22 @@ class RPA_CCN_Bulk_Combine():
 
         # if user passes in a date, read the file manually, otherwise let the user select the file they want to run
         if not query_date:
-            self.file = fd.askopenfilename(defaultextension='.txt', filetypes=[(
-                '.xlsx', '*.xlsx')], initialdir=self.export_location, title='Select a file')
-            # if user presses cancel button when selecting the file, exit program
-            if self.file == '':
-                logger.critical('no file selected')
-                exit()
-
-            logger.info(f'File selected: {self.file}')
+            today=datetime.today()
+            today_str = datetime.today().strftime('%m/%d/%Y')
+            answer = messagebox.askyesno("Question",f"Do you want to run for date {today_str}?")
+            if not answer:
+                self.file = fd.askopenfilename(defaultextension='.txt', filetypes=[(
+                    '.xlsx', '*.xlsx')], initialdir=self.export_location, title='Select a file')
+                # if user presses cancel button when selecting the file, exit program
+                if self.file == '':
+                    logger.critical('no file selected')
+                    exit()
+            else:
+                query_date = today.strftime('%m %d %Y')
+                self.file = f'{self.export_location}/{query_date}.xlsx'
         else:
             self.file = f'{self.export_location}/{query_date}.xlsx'
-            logger.debug(self.file)
+        logger.debug(self.file)
 
         # export date is the date of the etm export and the date the process is being run
         self.export_date = datetime.strptime(
