@@ -43,7 +43,10 @@ def check_if_within_3_days_of_EOM(date):
     return 
 
 def get_next_business_day(today):
-    import pandas as pd
+    
+    if isinstance(today, str):
+        today = pd.to_datetime(today)
+    
     tomorrow = today + datetime.timedelta(days=1) 
 
     # if tomorrow is a friday and day + 2 or day + 3 is EOM   

@@ -19,8 +19,9 @@ class Raw_File():
         self.ccn_type = ccn_type
         
         self.query_date = query_date
+        logger.debug(self.query_date)
         if file_generation_date:
-            self.file_generation_date = file_generation_date
+            self.file_generation_date = pd.to_datetime(file_generation_date)
         else:
             self.file_generation_date = get_next_business_day(pd.to_datetime(self.query_date)).strftime('%Y-%m-%d')
         
@@ -28,6 +29,19 @@ class Raw_File():
         
         self.file_data = self.read_data()
         self.file_data = self.format_output_file()
+        self.file_data = self.read_last_six_days()
+
+        # takes the file date and converts into MMDDYYYY format as a string
+        file_date_spaces = pd.to_datetime(self.file_generation_date).strftime(
+            format='%m %d %Y')
+        file_date_no_spaces = pd.to_datetime(self.file_generation_date).strftime(
+            format='%m%d%Y')
+
+        output_location = 'M:/CPP-Data/Sutherland RPA/Northwell Process Automation ETM Files/Monthly Reports/Charge Correction/New vs Established/Formatted Inputs'
+        
+        file_name = f'HCOB16{ccn_type} {file_date_spaces}.xlsx'
+        
+        self.generate_output(file_date_no_spaces, output_location, file_name)
 
     
     def read_data(self):
@@ -117,29 +131,35 @@ class Raw_File():
     
     def read_last_six_days(self):
         folder = r'M:\CPP-Data\Sutherland RPA\Northwell Process Automation ETM Files\Monthly Reports\Charge Correction\New vs Established\Formatted Inputs'
-        before_filter_shape = self.file_data.shape[0]
-        before_filter = self.file_data.copy()
+        file_data = self.file_data
+        before_filter = file_data.copy()
         invoices_before_filter = set(before_filter['Invoice'].unique())
-        logger.debug(len(invoices_before_filter))
+        logger.debug(f'{len(invoices_before_filter)} invoices before filter')
+        
+        if isinstance(self.query_date, str):
+            query_date = pd.to_datetime(self.query_date)
         
         # get all the files in folder if the creation date is within the last 6 days from self.query_date (excludes current date)
-        prev_files = [f for f in glob(f'{folder}/*/*.xlsx') if pd.to_datetime(os.path.getctime(f),  unit='s') > pd.to_datetime(self.query_date) - pd.Timedelta(days=6)]
+        prev_files = [f for f in glob(f'{folder}/*/*.xlsx') if pd.to_datetime(os.path.getctime(f),  unit='s') > pd.to_datetime(query_date) - pd.Timedelta(days=6)]
         prev_files = pd.concat([pd.read_excel(f) for f in prev_files])
+        logger.debug(f'{prev_files.shape[0]} invoices sent to bot in last 6 days')
         
-        # filter out rows from self.file_data if the invoice appears in prev_files
-        self.file_data = self.file_data[~self.file_data['Invoice'].isin(prev_files['Invoice'])]
+        file_data['Invoice'] = file_data['Invoice'].astype(int)
+        prev_files['Invoice'] = prev_files['Invoice'].astype(int)
         
-        invoices_after_filter = set(self.file_data['Invoice'].unique())
+        # filter out rows from file_date if the invoice appears in prev_files
+        file_data = file_data[~file_data['Invoice'].isin(prev_files['Invoice'])]
+        
+        invoices_after_filter = set(file_data['Invoice'].unique())
         logger.debug(len(invoices_after_filter))
         logger.info(f'{(len(invoices_before_filter) - len(invoices_after_filter))} invoices removed (already sent to bot within last 6 days)')    
         
         logger.debug(f'invoices removed: \n{(invoices_before_filter - invoices_after_filter)}')
           
-        logger.success(f'{self.file_data.shape[0]} invoices sent to bot')
-
+        logger.success(f'{file_data.shape[0]} invoices sent to bot')
+        return file_data
     
     def generate_output(self, file_generation_date: str, save_location: str, file_name: str, save = True):
-        files = self.read_last_six_days()
         logger.debug('generating output')
         for template_column, data_column in mappings.column_mappings.items():
             self.template[template_column] = self.file_data[data_column]

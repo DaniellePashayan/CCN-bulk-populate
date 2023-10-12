@@ -36,13 +36,17 @@ class RPA_CCN_Bulk_Combine():
             today=datetime.today()
             today_str = datetime.today().strftime('%m/%d/%Y')
             answer = messagebox.askyesno("Question",f"Do you want to run for date {today_str}?")
+
             if not answer:
                 self.file = fd.askopenfilename(defaultextension='.txt', filetypes=[(
                     '.xlsx', '*.xlsx')], initialdir=self.export_location, title='Select a file')
+                query_date = (self.file.split('/')[-1]).split('.')[0]
+                logger.debug(query_date)
                 # if user presses cancel button when selecting the file, exit program
                 if self.file == '':
                     logger.critical('no file selected')
                     exit()
+                
             else:
                 query_date = today.strftime('%m %d %Y')
                 self.file = f'{self.export_location}/{query_date}.xlsx'
@@ -66,19 +70,5 @@ class RPA_CCN_Bulk_Combine():
         logger.info(f'current date: {self.export_date}')
         logger.info(f'file generation date: {self.file_generation_date}')
 
-
-        # takes the file date and converts into MMDDYYYY format as a string
-        file_date_spaces = self.file_generation_date.strftime(
-            format='%m %d %Y')
-        file_date_no_spaces = self.file_generation_date.strftime(
-            format='%m%d%Y')
-
-        output_location = 'M:/CPP-Data/Sutherland RPA/Northwell Process Automation ETM Files/Monthly Reports/Charge Correction/New vs Established/Formatted Inputs'
-        
-        file_name = f'HCOB16{ccn_type} {file_date_spaces}.xlsx'
-        
-        logger.info(f'output location: {output_location}/{file_date_no_spaces}/{file_name}')
-        
         data = Raw_File(self.file, self.ccn_type, query_date)
-        data.generate_output(file_date_no_spaces, output_location, file_name)
         
