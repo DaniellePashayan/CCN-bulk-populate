@@ -54,6 +54,8 @@ def check_last_business_day_of_month(date):
     return last_weekday.weekday() == 4 and date == last_weekday
     
 def check_if_EOM(date):
+    if isinstance(date, str):
+        date = pd.to_datetime(date)
     return date.day == calendar.monthrange(date.year, date.month)[1]
 
 def get_next_business_day(today):
