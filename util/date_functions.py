@@ -33,6 +33,11 @@ def check_if_holiday(date):
     }
     holidays_df = pd.DataFrame(list(custom_holidays.items()), columns=['Date', 'Holiday Name'])
     holidays_df['Date'] = pd.to_datetime(holidays_df['Date'])
+    
+    # add one day to each holiday
+    # files are submitted ON holidays, but never the day after
+    holidays_df['Date'] = holidays_df['Date'] + datetime.timedelta(days=1)
+    
     holidays = holidays_df['Date'].to_list()    
 
     return date in holidays

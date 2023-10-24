@@ -8,13 +8,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from date_functions import check_if_weekend, check_if_holiday, check_if_EOM, check_last_business_day_of_month, get_next_business_day
 
 def test_check_if_weekend():
+    assert check_if_weekend('2023-10-16') == False
     assert check_if_weekend('2023-10-17') == False
+    assert check_if_weekend('2023-10-18') == False
+    assert check_if_weekend('2023-10-19') == False
+    assert check_if_weekend('2023-10-20') == False
     assert check_if_weekend('2023-10-21') == True
+    assert check_if_weekend('2023-10-22') == True
 
 def test_check_if_holiday():
-    assert check_if_holiday('2023-11-23') == True
-    assert check_if_holiday('2023-11-24') == False
+    assert check_if_holiday('2023-11-23') == False
+    assert check_if_holiday('2023-11-24') == True
     assert check_if_holiday('2023-06-19') == False
+    assert check_if_holiday('2023-06-20') == False
     
 def test_check_if_EOM():
     assert check_if_EOM('2023-10-30') == False
@@ -41,5 +47,12 @@ def test_get_next_business_day():
     assert get_next_business_day('2023-09-28') == pd.to_datetime('2023-10-02')
     
     # check all of the above
-    assert get_next_business_day('2023-12-28') == pd.to_datetime('2024-01-02')
+    assert get_next_business_day('2023-12-28') == pd.to_datetime('2024-01-01')
     assert get_next_business_day('2023-06-30') == pd.to_datetime('2023-07-03')
+    
+def test_david_examples():
+    assert get_next_business_day('2023-12-29') == pd.to_datetime('2024-01-01')
+    assert get_next_business_day('2023-09-28') == pd.to_datetime('2023-10-02')
+    assert get_next_business_day('2023-07-28') == pd.to_datetime('2023-08-01')
+    assert get_next_business_day('2023-04-28') == pd.to_datetime('2023-05-01')
+    
