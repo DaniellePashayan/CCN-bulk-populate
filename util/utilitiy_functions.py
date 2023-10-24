@@ -1,6 +1,10 @@
 # import mappings
-import util.mappings as mappings
-from util.logger_config import logger
+try:
+    import util.mappings as mappings
+    from util.logger_config import logger
+except ModuleNotFoundError:
+    import mappings
+    from logger_config import logger
 
 def replace_non_accepted_cpts(CPT_List: str) -> str:
     """CPT list is delimited by a pipe. CPTs appear in the list in the same order they appear by txn_num. This function uses the cpt_mappings crosswalk. Any codes not in the crosswalk are replaced by an empty string, leaving only the new patient CPT code in the correct position.
