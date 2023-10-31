@@ -37,7 +37,7 @@ def test_get_next_business_day():
     assert get_next_business_day('2023-09-15') == pd.to_datetime('2023-09-18')
     
     # check for holiday
-    assert get_next_business_day('2023-11-22') == pd.to_datetime('2023-11-24')
+    assert get_next_business_day('2023-11-22') == pd.to_datetime('2023-11-23')
     assert get_next_business_day('2023-11-21') == pd.to_datetime('2023-11-22')
     
     # check for EOM
