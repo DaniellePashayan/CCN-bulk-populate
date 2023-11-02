@@ -154,7 +154,7 @@ class Raw_File():
         logger.debug(len(invoices_after_filter))
         logger.info(f'{(len(invoices_before_filter) - len(invoices_after_filter))} invoices removed (already sent to bot within last 6 days)')    
         
-        logger.debug(f'invoices removed: \n{(invoices_before_filter - invoices_after_filter)}')
+        # logger.debug(f'invoices removed: \n{(invoices_before_filter - invoices_after_filter)}')
           
         logger.success(f'{file_data.shape[0]} invoices sent to bot')
         return file_data
