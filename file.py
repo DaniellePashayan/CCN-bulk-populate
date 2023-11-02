@@ -153,9 +153,7 @@ class Raw_File():
         invoices_after_filter = set(file_data['Invoice'].unique())
         logger.debug(len(invoices_after_filter))
         logger.info(f'{(len(invoices_before_filter) - len(invoices_after_filter))} invoices removed (already sent to bot within last 6 days)')    
-        
-        logger.debug(f'invoices removed: \n{(invoices_before_filter - invoices_after_filter)}')
-          
+                  
         logger.success(f'{file_data.shape[0]} invoices sent to bot')
         return file_data
     
@@ -176,8 +174,11 @@ class Raw_File():
         
         if save:
             if not os.path.exists(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}'):
-                self.template.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=None)
-                logger.success(f'file saved to {save_location}/{month} {year}/{file_generation_date}/{file_name}')
+                if self.template.shape[0] > 0:
+                    self.template.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=None)
+                    logger.success(f'file saved to {save_location}/{month} {year}/{file_generation_date}/{file_name}')
+                else:
+                    logger.success(f'{self.ccn_type} has no new invoices')
             else:
                 logger.info(f'appending to existing file {save_location}/{month} {year}/{file_generation_date}/{file_name}')
                 existing_file = pd.read_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}')
