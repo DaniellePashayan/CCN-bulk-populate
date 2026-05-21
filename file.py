@@ -14,7 +14,7 @@ from util.date_functions import get_next_business_day
 
 class Raw_File():
 
-    def __init__(self, source_path: str, ccn_type: str, query_date: str = None, file_generation_date: str = None):
+    def __init__(self, source_path: str, ccn_type: str, query_date: str = "", file_generation_date: str = ""):
         self.source_path = source_path
         self.ccn_type = ccn_type
         
@@ -61,6 +61,7 @@ class Raw_File():
             return file_data
         else:
             logger.critical('File does not exist')
+            return pd.DataFrame()
     
     def filter_data_for_output(self, file_data: pd.DataFrame):
         
@@ -141,7 +142,7 @@ class Raw_File():
         
         # get all the files in folder if the creation date is within the last 6 days from self.query_date (excludes current date)
         prev_files = [f for f in glob(f'{folder}/*/*/*.xlsx') if pd.to_datetime(os.path.getctime(f),  unit='s') > pd.to_datetime(query_date) - pd.Timedelta(days=6)]
-        prev_files = pd.concat([pd.read_excel(f) for f in prev_files])
+        prev_files = pd.concat([pd.read_excel(f) for f in prev_files if os.path.exists(f)])
         logger.debug(f'{prev_files.shape[0]} invoices sent to bot in last 6 days')
         
         file_data['Invoice'] = file_data['Invoice'].astype(int)
@@ -175,7 +176,7 @@ class Raw_File():
         if save:
             if not os.path.exists(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}'):
                 if self.template.shape[0] > 0:
-                    self.template.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=None)
+                    self.template.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=False)
                     logger.success(f'file saved to {save_location}/{month} {year}/{file_generation_date}/{file_name}')
                 else:
                     logger.success(f'{self.ccn_type} has no new invoices')
@@ -184,7 +185,7 @@ class Raw_File():
                 existing_file = pd.read_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}')
                 data = pd.concat([existing_file, self.template])
                 data = data.drop_duplicates()
-                data.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=None)
+                data.to_excel(f'{save_location}/{month} {year}/{file_generation_date}/{file_name}', index=False)
                 logger.success(f'file saved to {save_location}/{month} {year}/{file_generation_date}/{file_name}')
         else:
             return self.template  

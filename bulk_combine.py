@@ -1,19 +1,12 @@
-import sys
-import os
 from datetime import datetime
-from tkinter import filedialog as fd
-from tkinter import messagebox
-
-import pandas as pd
 
 import util.date_functions as date_functions
-import util.utilitiy_functions as utilitiy_functions
 from util.logger_config import logger
 from file import Raw_File
 
 
 class RPA_CCN_Bulk_Combine():
-    def __init__(self, ccn_type: str = "Electronic", query_date: str = None, file_generation_date: str = None):
+    def __init__(self, ccn_type: str = "Electronic", query_date: str | None = None, file_generation_date: str | None = None):
         """_summary_
 
         Args:
@@ -34,25 +27,16 @@ class RPA_CCN_Bulk_Combine():
         # if user passes in a date, read the file manually, otherwise let the user select the file they want to run
         if not query_date:
             today=datetime.today()
-            today_str = datetime.today().strftime('%m/%d/%Y')
-            answer = messagebox.askyesno("Question",f"Do you want to run for date {today_str}?")
-
-            if not answer:
-                self.file = fd.askopenfilename(defaultextension='.txt', filetypes=[(
-                    '.xlsx', '*.xlsx')], initialdir=self.export_location, title='Select a file')
-                query_date = (self.file.split('/')[-1]).split('.')[0]
-                logger.debug(query_date)
-                # if user presses cancel button when selecting the file, exit program
-                if self.file == '':
-                    logger.critical('no file selected')
-                    exit()
-                
-            else:
-                query_date = today.strftime('%m %d %Y')
-                self.file = f'{self.export_location}/{query_date}.xlsx'
-        else:
+            query_date = today.strftime('%m %d %Y')
             self.file = f'{self.export_location}/{query_date}.xlsx'
-        logger.debug(self.file)
+        else:
+            # check if query_date is in the correct format
+            try:
+                datetime.strptime(query_date, '%m %d %Y')
+            except ValueError:
+                logger.critical('Invalid query date format. Must be MM DD YYYY')
+                exit()
+            self.file = f'{self.export_location}/{query_date}.xlsx'
 
         # export date is the date of the etm export and the date the process is being run
         self.export_date = datetime.strptime(
@@ -65,10 +49,21 @@ class RPA_CCN_Bulk_Combine():
             self.file_generation_date = date_functions.get_next_business_day(
                 self.export_date)
         else:
+            # check if query_date is in the correct format
+            try:
+                datetime.strptime(file_generation_date, '%m %d %Y')
+            except ValueError:
+                logger.critical('Invalid file_generation_date format. Must be MM DD YYYY')
+                exit()
             self.file_generation_date = datetime.strptime(
                 file_generation_date, '%m %d %Y')
         logger.info(f'current date: {self.export_date}')
         logger.info(f'file generation date: {self.file_generation_date}')
 
-        data = Raw_File(self.file, self.ccn_type, query_date)
+        Raw_File(self.file, self.ccn_type, query_date)
+    
+    def cleanup(self):
+        """
+        The daily files are saved in the main directory. When the month ends, move files from the prior month into their respective dated folder
+        """
         
